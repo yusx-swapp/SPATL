@@ -345,7 +345,7 @@ if __name__ == '__main__':
 
 
 '''
-python multi_head_federated_learning.py \
+python spatl_federated_learning.py \
 --model=resnet32 \
 --dataset=cifar10 \
 --alg=fedavg \
