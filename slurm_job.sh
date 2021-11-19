@@ -37,7 +37,7 @@ nvidia-smi
 python multi_head_federated_learning.py \
 --model=vgg \
 --dataset=cifar10 \
---alg=scaffold \
+--alg=gradient_control \
 --lr=0.01 \
 --batch-size=64 \
 --epochs=5 \
