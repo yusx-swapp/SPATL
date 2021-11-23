@@ -1,7 +1,7 @@
 import argparse
 
 def get_parameter():
-    parser = argparse.ArgumentParser(description='gnnrl search script')
+    parser = argparse.ArgumentParser(description='SPATL: Salient Prameter Aggregation and Transfer Learning for Heterogeneous Federated Learning')
 
     # datasets and model
     # parser.add_argument('--model', default='mobilenet', type=str, help='model to prune')
