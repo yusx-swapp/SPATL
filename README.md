@@ -55,3 +55,5 @@ python multi_head_federated_learning.py \
 --comm_round=200 \
 --init_seed=0
    ```
+Search Result:
+![](./logs/figure/train_effi.png)
