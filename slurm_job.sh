@@ -38,7 +38,7 @@ python multi_head_federated_learning.py \
 --model=vgg \
 --dataset=cifar10 \
 --alg=gradient_control \
---lr=0.01 \
+--lr=0.001 \
 --batch-size=64 \
 --epochs=5 \
 --n_parties=30 \
@@ -47,7 +47,7 @@ python multi_head_federated_learning.py \
 --datadir='./data/' \
 --logdir='./logs/'  \
 --noise=0 \
---sample=0.7 \
+--sample=0.4 \
 --rho=0.9 \
 --comm_round=200 \
 --init_seed=0

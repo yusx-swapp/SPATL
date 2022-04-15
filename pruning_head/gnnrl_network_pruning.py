@@ -203,7 +203,7 @@ def search(env,layer_share,logger,args):
             avg_reward.append(running_reward)
             running_reward = 0
             avg_length = 0
-            print(avg_reward)
+            # print(avg_reward)
 
 
 

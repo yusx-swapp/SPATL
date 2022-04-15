@@ -9,9 +9,8 @@ import datetime
 import numpy as np
 from torch.utils import data
 
-from federated_learning.network_training import train_net, local_update, local_update_scaffold
-from pruning_head.gnnrl_network_pruning import get_num_hidden_layer
-from pruning_head.graph_env.graph_environment import graph_env
+from federated_learning.network_training import local_update, local_update_scaffold, \
+    local_update_scaffold_notransfer
 from utils.load_neural_networks import init_nets
 from utils.log_utils import mkdirs
 from utils.parameters import get_parameter
@@ -19,32 +18,15 @@ from utils.data.prepare_data import partition_data, get_dataloader
 from utils.save_model import save_checkpoint
 
 
-
-
-
-
-
-#
-# def get_partition_dict(dataset, partition, n_parties, init_seed=0, datadir='./data', logdir='./logs', beta=0.5):
-#     seed = init_seed
-#     np.random.seed(seed)
-#     torch.manual_seed(seed)
-#     X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts = partition_data(
-#         dataset, datadir, logdir, partition, n_parties, beta=beta)
-#
-#     return net_dataidx_map
+#Todo: Learning rate should decay
 
 if __name__ == '__main__':
 
     args = get_parameter()
 
-
-    ###################################################################################################
-
     mkdirs(args.logdir)
-    # mkdirs(args.modeldir)
     if args.log_file_name is None:
-        argument_path='experiment_arguments-%s.json' % datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S")
+        argument_path=args.model+'_'+str(args.n_parties) +'_sample:'+str(args.sample)+'_'+args.alg+'arguments-%s.json' % datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S")
     else:
         argument_path=args.log_file_name+'.json'
     with open(os.path.join(args.logdir, argument_path), 'w') as f:
@@ -55,20 +37,17 @@ if __name__ == '__main__':
         logging.root.removeHandler(handler)
 
     if args.log_file_name is None:
-        args.log_file_name = 'experiment_log-%s' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
+        args.log_file_name = args.model+'_'+str(args.n_parties) +'_sample:'+str(args.sample)+'_'+args.alg+'_experiment_log-%s' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
     log_path=args.log_file_name+'.log'
     logging.basicConfig(
         filename=os.path.join(args.logdir, log_path),
-        # filename='/home/qinbin/test.log',
         format='%(asctime)s %(levelname)-8s %(message)s',
         datefmt='%m-%d %H:%M', level=logging.DEBUG, filemode='w')
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    # logger.setLevel(logging.INFO)
     device = torch.device(args.device)
     logger.info(device)
-    ###################################################################################################
     seed = args.init_seed
     logger.info("#" * 100)
     np.random.seed(seed)
@@ -85,9 +64,6 @@ if __name__ == '__main__':
                                                                                       args.datadir,
                                                                                       args.batch_size,
                                                                                       32)
-    # print("len train_dl_global:", len(train_ds_global))
-
-
     data_size = len(test_ds_global)
 
     train_all_in_list = []
@@ -115,7 +91,7 @@ if __name__ == '__main__':
 
 
 
-    if args.alg == 'no_gradient_control':
+    if args.alg == 'spatl':
         logger.info("Initializing nets")
         #todo modify args
         nets, local_model_meta_data, layer_type = init_nets(args.n_parties,args.model, args)
@@ -131,6 +107,7 @@ if __name__ == '__main__':
 
         #record time
         t_start = time.time()
+        lr = args.lr
         for round in range(args.comm_round):
             logger.info("in comm round:" + str(round)+"#" * 100)
 
@@ -139,28 +116,12 @@ if __name__ == '__main__':
             np.random.shuffle(arr)
             selected = arr[:int(args.n_parties * args.sample)]
 
-            '''
-            global_para = global_model.state_dict()
-            if round == 0:
-                if args.is_same_initial:
-                    for idx in selected:
-                        nets[idx].load_state_dict(global_para)
-            else:
-                for idx in selected:
-                    nets[idx].load_state_dict(global_para)
-            '''
 
             for idx in selected:
                 nets[idx].module.encoder.load_state_dict(global_para)
-                #local updates:
-            # if round == 0:
-            #     prune = False
-            # else:
-            #     prune = True
-            # prune = True
             prune = False
-            local_update(nets, selected, args, net_dataidx_map,logger, test_dl = None, device=device, Prune=prune)
-
+            local_update(nets, selected, args, net_dataidx_map,logger, lr,test_dl = None, device=device, Prune=prune)
+            lr = lr * 0.99
             # update global model
             total_data_points = sum([len(net_dataidx_map[r]) for r in selected])
             fed_avg_freqs = [len(net_dataidx_map[r]) / total_data_points for r in selected]
@@ -176,16 +137,6 @@ if __name__ == '__main__':
                         global_para[key] += net_para[key] * fed_avg_freqs[idx]
             global_model.module.encoder.load_state_dict(global_para)
 
-            # logger.info('global n_training: %d' % len(train_dl_global))
-            # logger.info('global n_test: %d' % len(test_dl_global))
-            #
-            #
-            # train_acc = compute_accuracy(global_model, train_dl_global)
-            # test_acc, conf_matrix = compute_accuracy(global_model, test_dl_global, get_confusion_matrix=True)
-            #
-            #
-            # logger.info('>> Global Model Train accuracy: %f' % train_acc)
-            # logger.info('>> Global Model Test accuracy: %f' % test_acc)
 
         #record time
         t_end = time.time()
@@ -193,7 +144,7 @@ if __name__ == '__main__':
         logger.info("total communication time: %f" %(t_end- t_start))
         logger.info("avg time per round: %f" %((t_end- t_start)/args.comm_round))
 
-    elif args.alg == 'gradient_control':
+    elif args.alg == 'scaffold':
 
 
         logger.info("Initializing nets")
@@ -222,11 +173,6 @@ if __name__ == '__main__':
             for net_id, net in nets.items():
                 net.module.encoder.load_state_dict(global_para)
 
-        # if args.dataset == "cifar10":
-        #     input_x = torch.randn([1,3,32,32]).to(device)
-        #
-        # n_layer,layer_share = get_num_hidden_layer(global_model,args)
-        # env = graph_env(global_model,n_layer,args.dataset,test_dl_global,args.compression_ratio,args.g_in_size,args.log_dir,input_x,device,args)
 
         # record time
         t_start = time.time()
@@ -254,15 +200,12 @@ if __name__ == '__main__':
                 for idx in selected:
                     nets[idx].module.encoder.load_state_dict(global_para)
 
-            # if round == 0:
-            #     prune = False
-            # else:
-            #     prune = True
+
             prune = True
             # local_update_scaffold(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
             #                       env,test_dl=test_dl_global, device=device,Prune=prune)
             local_update_scaffold(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
-                      test_dl=test_dl_global, device=device,Prune=prune)
+                                  test_dl=test_dl_global, device=device,Prune=prune)
             # local_train_net(nets, args, net_dataidx_map, local_split=False, device=device)
 
             # update global model
@@ -287,53 +230,195 @@ if __name__ == '__main__':
 
             global_model.module.encoder.load_state_dict(global_para)
 
-            # logger.info('global n_training: %d' % len(train_dl_global))
-            #
-            # logger.info('global n_test: %d' % len(test_dl_global))
-            #
-            # global_model.to('cpu')
-            #
-            # train_acc = compute_accuracy(global_model, train_dl_global)
-            #
-            # test_acc, conf_matrix = compute_accuracy(global_model, test_dl_global, get_confusion_matrix=True)
-            #
-            # logger.info('>> Global Model Train accuracy: %f' % train_acc)
-            #
-            # logger.info('>> Global Model Test accuracy: %f' % test_acc)
 
         # record time
         t_end = time.time()
+        torch.save(global_model.module.state_dict(), args.ckp_dir+args.model+str(args.n_parties) +'_sample:'+str(args.sample)+'_'+args.alg+'.pth')
+        logger.info("total communication time: %f" % (t_end - t_start))
+        logger.info("avg time per round: %f" % ((t_end - t_start) / args.comm_round))
 
+    elif args.alg == 'noselect':
+
+
+        logger.info("Initializing nets")
+
+        nets, local_model_meta_data, layer_type = init_nets(args.n_parties,args.model, args)
+
+        global_models, global_model_meta_data, global_layer_type = init_nets( 1, args.model,args)
+
+        global_model = global_models[0]
+
+        c_nets, _, _ = init_nets(args.n_parties,args.model, args)
+
+        c_globals, _, _ = init_nets( 1, args.model,args)
+
+        c_global = c_globals[0]
+
+        c_global_para = c_global.module.encoder.state_dict()
+
+        for net_id, net in c_nets.items():
+            net.module.encoder.load_state_dict(c_global_para)
+
+        global_para = global_model.module.encoder.state_dict()
+
+        if args.is_same_initial:
+
+            for net_id, net in nets.items():
+                net.module.encoder.load_state_dict(global_para)
+
+        t_start = time.time()
+        for round in range(args.comm_round):
+
+            logger.info("in comm round:" + str(round))
+
+            arr = np.arange(args.n_parties)
+
+            np.random.shuffle(arr)
+
+            selected = arr[:int(args.n_parties * args.sample)]
+
+            global_para = global_model.module.encoder.state_dict()
+
+            if round == 0:
+
+                if args.is_same_initial:
+
+                    for idx in selected:
+                        nets[idx].module.encoder.load_state_dict(global_para)
+
+            else:
+
+                for idx in selected:
+                    nets[idx].module.encoder.load_state_dict(global_para)
+
+
+            prune = False
+            local_update_scaffold(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
+                                  test_dl=test_dl_global, device=device,Prune=prune)
+
+
+            total_data_points = sum([len(net_dataidx_map[r]) for r in selected])
+
+            fed_avg_freqs = [len(net_dataidx_map[r]) / total_data_points for r in selected]
+
+            for idx in range(len(selected)):
+
+                net_para = nets[selected[idx]].cpu().module.encoder.state_dict()
+
+                if idx == 0:
+
+                    for key in net_para:
+                        global_para[key] = net_para[key] * fed_avg_freqs[idx]
+
+                else:
+
+                    for key in net_para:
+                        global_para[key] += net_para[key] * fed_avg_freqs[idx]
+
+            global_model.module.encoder.load_state_dict(global_para)
+
+
+        # record time
+        t_end = time.time()
+        torch.save(global_model.module.state_dict(), args.ckp_dir+args.model+str(args.n_parties) +'_sample:'+str(args.sample)+'_'+args.alg+'.pth')
+        logger.info("total communication time: %f" % (t_end - t_start))
+        logger.info("avg time per round: %f" % ((t_end - t_start) / args.comm_round))
+
+
+    elif args.alg == 'notransfer':
+
+
+        logger.info("Initializing nets")
+
+        nets, local_model_meta_data, layer_type = init_nets(args.n_parties,args.model, args)
+
+        global_models, global_model_meta_data, global_layer_type = init_nets( 1, args.model,args)
+
+        global_model = global_models[0]
+
+        c_nets, _, _ = init_nets(args.n_parties,args.model, args)
+
+        c_globals, _, _ = init_nets( 1, args.model,args)
+
+        c_global = c_globals[0]
+
+        c_global_para = c_global.module.state_dict()
+
+        for net_id, net in c_nets.items():
+            net.module.load_state_dict(c_global_para)
+
+        global_para = global_model.module.state_dict()
+
+        if args.is_same_initial:
+
+            for net_id, net in nets.items():
+                net.module.load_state_dict(global_para)
+
+
+        # record time
+        t_start = time.time()
+        for round in range(args.comm_round):
+
+            logger.info("in comm round:" + str(round))
+
+            arr = np.arange(args.n_parties)
+
+            np.random.shuffle(arr)
+
+            selected = arr[:int(args.n_parties * args.sample)]
+
+            global_para = global_model.module.state_dict()
+            print("load param\n\n\n")
+            global_model.module.load_state_dict(global_para)
+            if round == 0:
+
+                if args.is_same_initial:
+
+                    for idx in selected:
+                        nets[idx].module.load_state_dict(global_para)
+
+            else:
+
+                for idx in selected:
+                    nets[idx].module.load_state_dict(global_para)
+
+
+            prune = True
+            local_update_scaffold_notransfer(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
+                                             test_dl=test_dl_global, device=device,Prune=prune)
+            # update global model
+
+            total_data_points = sum([len(net_dataidx_map[r]) for r in selected])
+
+            fed_avg_freqs = [len(net_dataidx_map[r]) / total_data_points for r in selected]
+
+            for idx in range(len(selected)):
+
+                net_para = nets[selected[idx]].cpu().module.state_dict()
+
+                if idx == 0:
+
+                    for key in net_para:
+                        global_para[key] = net_para[key] * fed_avg_freqs[idx]
+
+                else:
+
+                    for key in net_para:
+                        global_para[key] += net_para[key] * fed_avg_freqs[idx]
+            print("load param 22222\n\n\n")
+            global_model.module.load_state_dict(global_para)
+
+
+        # record time
+        t_end = time.time()
+        torch.save(global_model.module.state_dict(), args.ckp_dir+args.model+str(args.n_parties) +'_sample:'+str(args.sample)+'_'+args.alg+'.pth')
         logger.info("total communication time: %f" % (t_end - t_start))
         logger.info("avg time per round: %f" % ((t_end - t_start) / args.comm_round))
 
     #add fl alg here
-    elif args.alg== '???':
-        #record time
-        t_start = time.time()
-
-        '''add code here'''
-        #record time
-        t_end = time.time()
-
-        '''delete raise NotImplementedError'''
-        raise NotImplementedError
 
 
 
-    elif args.alg == 'local_training':
-        logger.info("Initializing nets")
-        nets, local_model_meta_data, layer_type = init_nets(args.n_parties, args)
-        arr = np.arange(args.n_parties)
-        # local_train_net(nets, arra, args, net_dataidx_map, test_dl = test_dl_global, device=device)
-
-    elif args.alg == 'all_in':
-        nets, local_model_meta_data, layer_type = init_nets(1, args)
-        n_epoch = args.epochs
-
-        trainacc, testacc = train_net(0, nets[0], train_dl_global, test_dl_global, n_epoch, args.lr, args.optimizer, device=device)
-
-        logger.info("All in test acc: %f" % testacc)
 
 
     save_checkpoint({
@@ -345,7 +430,7 @@ if __name__ == '__main__':
 
 
 '''
-python spatl_federated_learning.py \
+python multi_head_federated_learning.py \
 --model=resnet32 \
 --dataset=cifar10 \
 --alg=fedavg \

@@ -433,7 +433,7 @@ def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, noise_lev
 
 
         if dataidxs is not None:
-            train_ds = dl_obj(datadir, dataidxs=dataidxs[:int(len(dataidxs)*0.2)], train=True, transform=transform_train, download=True)
+            train_ds = dl_obj(datadir, dataidxs=dataidxs[:int(len(dataidxs)*0.8)], train=True, transform=transform_train, download=True)
             test_ds = dl_obj(datadir, train=True,dataidxs=dataidxs[int(len(dataidxs)*0.8):], transform=transform_test, download=True)
         else:
             train_ds = dl_obj(datadir, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
