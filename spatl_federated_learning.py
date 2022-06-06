@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
             for idx in selected:
                 nets[idx].module.encoder.load_state_dict(global_para)
-            prune = False
+            prune = True
             local_update(nets, selected, args, net_dataidx_map,logger, lr,test_dl = None, device=device, Prune=prune)
             lr = lr * 0.99
             # update global model
@@ -205,7 +205,7 @@ if __name__ == '__main__':
             # local_update_scaffold(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
             #                       env,test_dl=test_dl_global, device=device,Prune=prune)
             local_update_scaffold(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
-                                  test_dl=test_dl_global, device=device,Prune=prune)
+                      test_dl=test_dl_global, device=device,Prune=prune)
             # local_train_net(nets, args, net_dataidx_map, local_split=False, device=device)
 
             # update global model
@@ -385,7 +385,7 @@ if __name__ == '__main__':
 
             prune = True
             local_update_scaffold_notransfer(nets, selected, global_model, c_nets, c_global, args, net_dataidx_map,logger,
-                                             test_dl=test_dl_global, device=device,Prune=prune)
+                                  test_dl=test_dl_global, device=device,Prune=prune)
             # update global model
 
             total_data_points = sum([len(net_dataidx_map[r]) for r in selected])

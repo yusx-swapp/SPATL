@@ -189,7 +189,7 @@ class Agent:
             surr1 = ratios * advantages
             surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
             loss = -torch.min(surr1, surr2) + 0.5*self.MseLoss(state_values, rewards) - 0.01*dist_entropy
-            print('Epoches {} \t loss: {} \t '.format(_, loss.mean()))
+            # print('Epoches {} \t loss: {} \t '.format(_, loss.mean()))
             # start = time.time()
             # take gradient step
             self.optimizer.zero_grad()

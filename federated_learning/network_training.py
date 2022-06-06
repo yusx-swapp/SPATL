@@ -46,7 +46,7 @@ def local_update(nets, selected, args, net_dataidx_map,logger, lr=0.01,test_dl =
 
         if Prune:
             logger.info("--------------------------------------Pruning network %s.--------------------------------------" % (str(net_id)))
-            net,_ = gnnrl_pruning(net, test_dl_local,logger,args)
+            net,_,sparsity = gnnrl_pruning(net,logger, test_dl_local,args)
             logger.info("Flops ratio: %s." % (str(_)))
             logger.info("--------------------------------------End pruning %s.--------------------------------------" % (str(net_id)))
             for name, module in net.module.encoder.named_modules(): #remove mask

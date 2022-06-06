@@ -1,7 +1,7 @@
 import argparse
 
 def get_parameter():
-    parser = argparse.ArgumentParser(description='SPATL: Salient Prameter Aggregation and Transfer Learning for Heterogeneous Federated Learning')
+    parser = argparse.ArgumentParser(description='gnnrl search script')
 
     # datasets and model
     # parser.add_argument('--model', default='mobilenet', type=str, help='model to prune')
@@ -99,6 +99,8 @@ def get_parameter():
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate (default: 0.01)')
     parser.add_argument('--epochs', type=int, default=5, help='number of local epochs')
     parser.add_argument('--n_parties', type=int, default=2,  help='number of workers in a distributed cluster')
-    parser.add_argument('--alg', type=str, default='gradient_control',
-                        help='communication strategy: gradient_control/no_gradient_control')
+    parser.add_argument('--ckp_dir', type=str, default='ckp_dir/',  help='number of workers in a distributed cluster')
+
+    parser.add_argument('--alg', type=str, default='fedavg',
+                        help='communication strategy: fedavg/fedprox')
     return parser.parse_args()

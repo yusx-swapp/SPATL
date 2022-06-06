@@ -150,6 +150,7 @@ def search(env,layer_share,logger,args):
         for t in range(max_timesteps):
             time_step +=1
             # Running policy_old:
+
             action = agent.select_action(state, memory)
             state, reward, done = env.step(action,t+1)
 
@@ -165,7 +166,9 @@ def search(env,layer_share,logger,args):
                 # start = time.time()
 
                 print("-*"*10,"start training the RL agent","-*"*10)
+                import time
                 agent.update(memory)
+                # torch.save(agent.policy.actor.graph_encoder.state_dict(),'./'+args.model+'_rl_graph_encoder_actor_{}.pth'.format(env_name))
                 memory.clear_memory()
                 time_step = 0
 
