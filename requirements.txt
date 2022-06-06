@@ -4,5 +4,11 @@ pandas==1.2.5
 Pillow==9.1.1
 scikit_learn==1.1.1
 torch==1.9.1
-torch_geometric==2.0.1
 torchvision==0.10.1
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-scatter
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-sparse
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-cluster
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-spline-conv
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-geometric
+--extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric
+
