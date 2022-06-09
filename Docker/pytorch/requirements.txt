@@ -10,5 +10,4 @@ torchvision==0.10.1
 --extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-cluster
 --extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-spline-conv
 --extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-geometric
---extra-index-url https://data.pyg.org/whl/torch-1.9.0+cu111.html torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric
 
