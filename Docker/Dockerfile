@@ -18,12 +18,6 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Mini
     sh ~/miniconda.sh -b -p $HOME/conda && \
     rm ~/miniconda.sh
 RUN $HOME/conda/bin/conda update -n base conda
-#RUN $HOME/conda/bin/conda create -y --name pytorch-py$PYTHON_VERSION python=$PYTHON_VERSION conda-build cython typing typing_extensions numpy pyyaml scipy ipython mkl mkl-include
-#RUN $HOME/conda/bin/conda install --name pytorch-py$PYTHON_VERSION -c pytorch magma-cuda112
-#ENV PATH $HOME/conda/envs/pytorch-py$PYTHON_VERSION/bin:$PATH
-#RUN $HOME/conda/bin/conda clean -ya
-#RUN $HOME/conda/envs/pytorch-py$PYTHON_VERSION/bin/pip install spacy
-
 
 # install requirements
 WORKDIR /app
