@@ -421,12 +421,11 @@ if __name__ == '__main__':
 
 
 
-    save_checkpoint({
-        'state_dict': global_model.module.state_dict() if isinstance(global_model,
-                                                                     torch.nn.DataParallel) else global_model.state_dict(),
-        # 'acc': test_acc,
-
-    }, checkpoint_dir="federated_learning/save/vgg/static-pruned-25/iid/")
+    # save_checkpoint({
+    #     'state_dict': global_model.module.state_dict() if isinstance(global_model,
+    #                                                                  torch.nn.DataParallel) else global_model.state_dict(),
+    #
+    # }, checkpoint_dir="federated_learning/save/vgg/static-pruned-25/iid/")
 
 
 '''
