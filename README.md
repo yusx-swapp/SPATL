@@ -1,5 +1,8 @@
 # SPATL 
 SPATL: Salient Parameter Aggregation and Transfer Learning for Heterogeneous Clients in Federated Learning
+
+[![DOI](https://zenodo.org/badge/429851236.svg)](https://zenodo.org/badge/latestdoi/429851236)
+
 ## Dependencies
 
 Current code base is tested under following environment:
